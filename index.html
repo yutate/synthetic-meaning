@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synthetic Meaning Space</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Playfair+Display:wght@600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0604;
+  --surface: #110b08;
+  --surface2: #1a1009;
+  --surface3: #22160d;
+  --border: rgba(212,160,23,0.08);
+  --border2: rgba(212,160,23,0.16);
+  --text: #f0e8d8;
+  --muted: #9e8c72;
+  --dim: #5c4e38;
+  --accent: #c0392b;
+  --accent-glow: rgba(192,57,43,0.22);
+  --accent2: #d4a017;
+  --accent3: #e8c84a;
+  --warn: #e07b30;
+  --danger: #e84040;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Noto Sans JP', sans-serif; font-size: 14px; line-height: 1.6; min-height: 100vh; }
+
+/* ===== HEADER ===== */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(8,9,13,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 56px;
+}
+.site-logo { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 800; letter-spacing: 0.01em; display: flex; align-items: center; gap: 10px; }
+.logo-dot { width: 7px; height: 7px; background: var(--accent2); border-radius: 1px; transform: rotate(45deg); box-shadow: 0 0 8px var(--accent2); }
+.logo-sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--dim); letter-spacing: 0.12em; }
+.header-badge { font-family: 'IBM Plex Mono', monospace; font-size: 9px; background: rgba(212,160,23,0.1); color: var(--accent2); border: 1px solid rgba(212,160,23,0.3); padding: 2px 9px; border-radius: 2px; letter-spacing: 0.12em; }
+
+/* ===== STEP BAR ===== */
+.steps-bar {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 0 24px; display: flex; align-items: stretch; overflow-x: auto;
+}
+.step-item { display: flex; align-items: center; gap: 10px; padding: 12px 20px; white-space: nowrap; position: relative; border-bottom: 2px solid transparent; transition: all 0.3s; }
+.step-item::after { content: ''; position: absolute; right: 0; top: 50%; transform: translateY(-50%); width: 1px; height: 16px; background: var(--border2); }
+.step-item:last-child::after { display: none; }
+.step-num { width: 20px; height: 20px; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 10px; background: var(--surface3); color: var(--dim); flex-shrink: 0; transition: all 0.3s; border: 1px solid var(--border2); }
+.step-label { font-size: 12px; color: var(--dim); font-weight: 500; transition: all 0.3s; font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.04em; }
+.step-item.done { border-bottom-color: var(--accent2); }
+.step-item.done .step-num { background: rgba(212,160,23,0.15); color: var(--accent2); border-color: rgba(212,160,23,0.4); }
+.step-item.done .step-label { color: var(--accent2); }
+.step-item.active { border-bottom-color: var(--accent); }
+.step-item.active .step-num { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 0 12px var(--accent-glow); }
+.step-item.active .step-label { color: var(--text); font-weight: 700; }
+
+/* ===== LAYOUT ===== */
+.main-wrap { max-width: 960px; margin: 0 auto; padding: 32px 20px 80px; display: flex; flex-direction: column; gap: 24px; }
+
+/* ===== CARD ===== */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; transition: border-color 0.3s; }
+.card.active-card { border-color: rgba(192,57,43,0.35); }
+.card-head { display: flex; align-items: center; gap: 12px; padding: 18px 24px; border-bottom: 1px solid var(--border); border-left: 3px solid var(--accent); }
+.card-badge { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; background: rgba(192,57,43,0.12); color: var(--accent); border: 1px solid rgba(192,57,43,0.3); padding: 3px 9px; border-radius: 2px; }
+.card-title { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 700; letter-spacing: 0.02em; }
+.card-body { padding: 24px; }
+
+/* ===== FORM ===== */
+.fg { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.fg-1 { grid-template-columns: 1fr; }
+.fg-3 { grid-template-columns: 1fr 1fr 1fr; }
+@media(max-width:640px) { .fg, .fg-3 { grid-template-columns: 1fr; } }
+.f { display: flex; flex-direction: column; gap: 6px; }
+label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+label .opt { font-family: 'Noto Sans JP', sans-serif; text-transform: none; letter-spacing: 0; font-size: 11px; color: var(--dim); margin-left: 6px; }
+label .req { color: var(--accent); margin-left: 3px; }
+input[type=text], input[type=password], select, textarea {
+  background: var(--surface2); border: 1px solid var(--border2); border-radius: 4px;
+  color: var(--text); font-family: 'Noto Sans JP', sans-serif; font-size: 13px;
+  padding: 10px 13px; outline: none; transition: border-color 0.18s; width: 100%;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent2); }
+select { cursor: pointer; }
+textarea { min-height: 80px; resize: vertical; line-height: 1.7; }
+
+/* ===== AI SELECTOR ===== */
+.ai-selector { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+@media(max-width:600px) { .ai-selector { grid-template-columns: 1fr 1fr; } }
+.ai-btn { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 4px; padding: 10px 14px; cursor: pointer; font-size: 12px; color: var(--muted); transition: all 0.18s; font-family: 'Noto Sans JP', sans-serif; }
+.ai-btn:hover { color: var(--text); border-color: rgba(212,160,23,0.3); }
+.ai-btn.active { border-color: var(--accent2); color: var(--text); background: rgba(212,160,23,0.07); }
+.ai-dot { width: 6px; height: 6px; border-radius: 1px; transform: rotate(45deg); background: var(--dim); flex-shrink: 0; }
+.ai-btn.active .ai-dot { background: var(--accent2); box-shadow: 0 0 6px var(--accent2); }
+.ai-sub { font-size: 10px; opacity: 0.6; margin-left: 2px; }
+.key-area { display: none; }
+.key-area.active { display: block; }
+.key-row { display: flex; gap: 8px; margin-bottom: 4px; }
+.key-row input { flex: 1; }
+.btn-sm { background: var(--surface3); border: 1px solid var(--border2); color: var(--muted); border-radius: 4px; padding: 8px 14px; font-size: 12px; font-family: 'Noto Sans JP', sans-serif; cursor: pointer; white-space: nowrap; transition: all 0.18s; }
+.btn-sm:hover { color: var(--text); border-color: var(--accent2); }
+.key-st { font-size: 11px; color: var(--dim); }
+.key-st.ok { color: var(--accent3); }
+
+/* ===== IMAGE UPLOAD ===== */
+.upload-area {
+  border: 2px dashed var(--border2); border-radius: 10px;
+  padding: 24px; text-align: center; cursor: pointer; transition: all 0.18s; position: relative;
+}
+.upload-area:hover, .upload-area.drag { border-color: var(--accent2); background: rgba(0,212,255,0.04); }
+.upload-preview { max-width: 100%; max-height: 240px; border-radius: 8px; margin-top: 12px; display: none; }
+.upload-preview.on { display: block; margin: 12px auto 0; }
+
+/* ===== PERSONA CARDS ===== */
+.persona-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+@media(max-width:640px) { .persona-grid { grid-template-columns: 1fr 1fr; } }
+.persona-card {
+  background: var(--surface2); border: 1px solid var(--border2); border-radius: 6px;
+  padding: 12px 14px; cursor: pointer; transition: all 0.18s; user-select: none;
+}
+.persona-card:hover { border-color: rgba(212,160,23,0.3); transform: translateY(-1px); }
+.persona-card.selected { border-color: var(--accent2); background: rgba(212,160,23,0.06); }
+.persona-name { font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+.persona-desc { font-size: 11px; color: var(--muted); line-height: 1.5; }
+.persona-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.persona-tag { font-size: 9px; font-family: 'IBM Plex Mono', monospace; border: 1px solid var(--border); border-radius: 2px; padding: 1px 5px; color: var(--dim); }
+.persona-card.selected .persona-tag { border-color: rgba(212,160,23,0.3); color: var(--accent2); }
+
+/* ===== BUTTONS ===== */
+.btn-primary { background: var(--accent); color: #fff; border: none; border-radius: 4px; padding: 14px 28px; font-size: 14px; font-weight: 700; font-family: 'Noto Sans JP', sans-serif; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; letter-spacing: 0.02em; }
+.btn-primary:hover:not(:disabled) { background: #a93226; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(192,57,43,0.4); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.btn-secondary { background: transparent; border: 1px solid var(--border2); color: var(--muted); border-radius: 4px; padding: 10px 18px; font-size: 13px; font-family: 'Noto Sans JP', sans-serif; cursor: pointer; transition: all 0.18s; }
+.btn-secondary:hover { border-color: var(--accent2); color: var(--text); }
+.btn-ghost { background: transparent; border: none; color: var(--muted); font-size: 12px; font-family: 'IBM Plex Mono', monospace; cursor: pointer; padding: 6px 12px; border-radius: 4px; transition: all 0.15s; }
+.btn-ghost:hover { color: var(--text); background: var(--surface2); }
+.btn-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+/* ===== LOADING ===== */
+.loading-overlay { display: none; background: var(--surface); border-radius: 10px; border: 1px solid var(--border); padding: 48px 24px; text-align: center; }
+.loading-overlay.on { display: block; }
+.loading-spinner { width: 32px; height: 32px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 12px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; line-height: 1.8; }
+.loading-step { color: var(--accent2); }
+
+/* ===== PROGRESS BAR ===== */
+.progress-bar-wrap { background: var(--surface3); border-radius: 2px; height: 3px; margin-top: 12px; overflow: hidden; }
+.progress-bar { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 2px; transition: width 0.5s ease; }
+
+/* ===== SCORE BARS ===== */
+.score-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media(max-width:560px) { .score-grid { grid-template-columns: 1fr; } }
+.score-row { display: flex; align-items: center; gap: 10px; }
+.score-label { font-size: 11px; color: var(--muted); min-width: 72px; }
+.score-bar-wrap { flex: 1; background: var(--surface3); border-radius: 2px; height: 5px; overflow: hidden; }
+.score-bar { height: 100%; border-radius: 2px; transition: width 0.7s cubic-bezier(0.4,0,0.2,1); }
+.score-val { font-family: 'IBM Plex Mono', monospace; font-size: 11px; min-width: 20px; text-align: right; }
+
+/* ===== PERSONA RESPONSE ===== */
+.persona-response {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 18px; margin-bottom: 12px;
+  border-left: 2px solid var(--accent);
+}
+.persona-response-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.persona-avatar { width: 36px; height: 36px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.persona-response-name { font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 700; }
+.persona-response-attr { font-size: 11px; color: var(--muted); }
+.persona-scores { margin-bottom: 12px; }
+.persona-comment { font-size: 13px; color: var(--text); line-height: 1.8; }
+.persona-comment .pos { color: var(--accent3); }
+.persona-comment .neg { color: var(--danger); }
+.persona-comment .warn { color: var(--warn); }
+
+/* ===== DISCUSSION ===== */
+.discussion-log { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
+.bubble-wrap { display: flex; flex-direction: column; gap: 14px; }
+.bubble { max-width: 80%; }
+.bubble-left { align-self: flex-start; }
+.bubble-right { align-self: flex-end; }
+.bubble-meta { font-size: 10px; color: var(--dim); margin-bottom: 4px; font-family: 'IBM Plex Mono', monospace; }
+.bubble-right .bubble-meta { text-align: right; }
+.bubble-body { background: var(--surface3); border-radius: 6px; padding: 12px 16px; font-size: 13px; line-height: 1.7; color: var(--text); border-left: 2px solid var(--border2); }
+.bubble-right .bubble-body { background: rgba(192,57,43,0.08); border-left: none; border-right: 2px solid rgba(192,57,43,0.3); }
+
+/* ===== MEANING MAP ===== */
+.meaning-map-wrap { position: relative; width: 100%; padding-top: 55%; border: 1px solid var(--border2); border-radius: 8px; overflow: hidden; background: var(--surface2); }
+.meaning-map-inner { position: absolute; inset: 0; }
+.meaning-map-axis { position: absolute; }
+.meaning-map-axis.x { top: 50%; left: 0; right: 0; height: 1px; background: rgba(212,160,23,0.1); }
+.meaning-map-axis.y { left: 50%; top: 0; bottom: 0; width: 1px; background: rgba(212,160,23,0.1); }
+.meaning-map-label { position: absolute; font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--dim); letter-spacing: 0.1em; }
+.meaning-map-label.top    { top: 6px; left: 50%; transform: translateX(-50%); }
+.meaning-map-label.bottom { bottom: 6px; left: 50%; transform: translateX(-50%); }
+.meaning-map-label.left   { left: 6px; top: 50%; transform: translateY(-50%); }
+.meaning-map-label.right  { right: 6px; top: 50%; transform: translateY(-50%); }
+.meaning-dot { position: absolute; width: 28px; height: 28px; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 12px; transform: translate(-50%,-50%); cursor: default; transition: all 0.6s cubic-bezier(0.4,0,0.2,1); }
+.meaning-dot-label { position: absolute; font-size: 9px; font-family: 'IBM Plex Mono', monospace; white-space: nowrap; top: 100%; margin-top: 2px; left: 50%; transform: translateX(-50%); color: var(--muted); }
+
+/* ===== INSIGHT TAGS ===== */
+.insight-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.itag { font-size: 11px; padding: 4px 10px; border-radius: 3px; font-family: 'IBM Plex Mono', monospace; }
+.itag-pos { background: rgba(232,200,74,0.1); border: 1px solid rgba(232,200,74,0.25); color: var(--accent3); }
+.itag-neg { background: rgba(232,64,64,0.1); border: 1px solid rgba(232,64,64,0.25); color: var(--danger); }
+.itag-warn { background: rgba(224,123,48,0.1); border: 1px solid rgba(224,123,48,0.25); color: var(--warn); }
+.itag-neu { background: var(--surface3); border: 1px solid var(--border); color: var(--muted); }
+
+/* ===== REPORT ===== */
+.report-section { margin-bottom: 24px; }
+.report-section-title { font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+.report-number { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--accent2); background: rgba(212,160,23,0.1); border: 1px solid rgba(212,160,23,0.25); width: 22px; height: 22px; border-radius: 2px; display: flex; align-items: center; justify-content: center; }
+.improvement-card { background: var(--surface2); border: 1px solid rgba(232,200,74,0.2); border-radius: 6px; padding: 14px 16px; margin-bottom: 8px; }
+.improvement-card-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--accent3); letter-spacing: 0.12em; margin-bottom: 6px; }
+.improvement-card-body { font-size: 13px; color: var(--text); line-height: 1.7; }
+.friction-card { background: var(--surface2); border: 1px solid rgba(232,64,64,0.2); border-radius: 6px; padding: 14px 16px; margin-bottom: 8px; }
+.friction-card-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--danger); letter-spacing: 0.12em; margin-bottom: 6px; }
+.hypothesis-card { background: var(--surface2); border: 1px solid rgba(224,123,48,0.2); border-radius: 6px; padding: 14px 16px; margin-bottom: 8px; }
+.hypothesis-card-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--warn); letter-spacing: 0.12em; margin-bottom: 6px; }
+
+/* ===== OVERALL SCORE ===== */
+.overall-score-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+@media(max-width:560px) { .overall-score-grid { grid-template-columns: 1fr 1fr; } }
+.oscore-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 14px 12px; text-align: center; }
+.oscore-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--dim); letter-spacing: 0.1em; margin-bottom: 6px; }
+.oscore-val { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 800; line-height: 1; }
+.oscore-max { font-size: 12px; color: var(--dim); font-weight: 400; }
+.oscore-bar { height: 3px; border-radius: 2px; margin-top: 8px; transition: width 0.7s ease; }
+
+/* ===== ERR ===== */
+.err-msg { display: none; background: rgba(232,64,64,0.08); border: 1px solid rgba(232,64,64,0.25); border-radius: 6px; color: var(--danger); padding: 12px 16px; font-size: 12px; margin-top: 12px; }
+.err-msg.on { display: block; }
+
+/* ===== DIVIDER ===== */
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+/* ===== DOWNLOAD BAR ===== */
+.dl-bar { display: flex; align-items: center; gap: 8px; padding: 12px 24px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+.dl-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--dim); letter-spacing: 0.08em; margin-right: 4px; }
+
+/* ===== RADAR CHART ===== */
+.radar-wrap { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; margin-bottom: 16px; }
+.radar-item { text-align: center; }
+.radar-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); margin-top: 6px; }
+
+/* ===== CONFLICT BADGES ===== */
+.conflict-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; background: var(--surface2); border-radius: 6px; margin-bottom: 6px; }
+.conflict-icon { font-size: 16px; flex-shrink: 0; margin-top: 2px; }
+.conflict-text { font-size: 12px; color: var(--text); line-height: 1.7; }
+.conflict-personas { font-size: 10px; color: var(--dim); margin-top: 3px; font-family: 'IBM Plex Mono', monospace; }
+
+/* ===== UNDERSTANDING PANEL ===== */
+.understanding-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+@media(max-width:560px) { .understanding-grid { grid-template-columns: 1fr; } }
+.ug-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; }
+.ug-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--dim); letter-spacing: 0.1em; margin-bottom: 6px; }
+.ug-val { font-size: 12px; color: var(--text); line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+  <div class="site-logo">
+    <div class="logo-dot"></div>
+    Synthetic Meaning Space
+    <span class="logo-sub">v1.0</span>
+  </div>
+  <div class="header-badge">MEANING EXPLORATION</div>
+</header>
+
+<!-- STEP BAR -->
+<div class="steps-bar" id="stepsBar">
+  <div class="step-item active" id="step1-item"><div class="step-num">1</div><div class="step-label">Creative入力</div></div>
+  <div class="step-item" id="step2-item"><div class="step-num">2</div><div class="step-label">Creative解析</div></div>
+  <div class="step-item" id="step3-item"><div class="step-num">3</div><div class="step-label">Persona解釈</div></div>
+  <div class="step-item" id="step4-item"><div class="step-num">4</div><div class="step-label">座談会</div></div>
+  <div class="step-item" id="step5-item"><div class="step-num">5</div><div class="step-label">診断レポート</div></div>
+</div>
+
+<div class="main-wrap">
+
+<!-- ===== STEP 1: INPUT ===== -->
+<div class="card active-card" id="inputSection">
+  <div class="card-head">
+    <span class="card-badge">Step 1</span>
+    <span class="card-title">Creative & 設定</span>
+  </div>
+  <div class="card-body">
+
+    <!-- AI & KEY -->
+    <div class="fg">
+      <div class="f">
+        <label>AIモデル<span class="req">*</span></label>
+        <div class="ai-selector">
+          <button class="ai-btn active" data-ai="claude-sonnet" onclick="selectAI('claude-sonnet')">
+            <span class="ai-dot"></span>Claude<span class="ai-sub">Sonnet</span>
+          </button>
+          <button class="ai-btn" data-ai="claude-haiku" onclick="selectAI('claude-haiku')">
+            <span class="ai-dot"></span>Claude<span class="ai-sub">Haiku</span>
+          </button>
+          <button class="ai-btn" data-ai="gemini" onclick="selectAI('gemini')">
+            <span class="ai-dot"></span>Gemini<span class="ai-sub">2.5 Flash</span>
+          </button>
+          <button class="ai-btn" data-ai="openai" onclick="selectAI('openai')">
+            <span class="ai-dot"></span>ChatGPT<span class="ai-sub">4o</span>
+          </button>
+        </div>
+        <div class="key-area active" id="key-claude-sonnet">
+          <div class="key-row"><input type="password" id="apiKey-claude-sonnet" placeholder="sk-ant-..." /><button class="btn-sm" onclick="saveKey('claude-sonnet')">保存</button></div>
+          <div class="key-st" id="keySt-claude-sonnet"></div>
+        </div>
+        <div class="key-area" id="key-claude-haiku">
+          <div class="key-row"><input type="password" id="apiKey-claude-haiku" placeholder="sk-ant-..." /><button class="btn-sm" onclick="saveKey('claude-haiku')">保存</button></div>
+          <div class="key-st" id="keySt-claude-haiku"></div>
+          <div style="font-size:11px;color:var(--dim);margin-top:3px">AnthropicキーはSonnetと共通です</div>
+        </div>
+        <div class="key-area" id="key-gemini">
+          <div class="key-row"><input type="password" id="apiKey-gemini" placeholder="AIza..." /><button class="btn-sm" onclick="saveKey('gemini')">保存</button></div>
+          <div class="key-st" id="keySt-gemini"></div>
+        </div>
+        <div class="key-area" id="key-openai">
+          <div class="key-row"><input type="password" id="apiKey-openai" placeholder="sk-..." /><button class="btn-sm" onclick="saveKey('openai')">保存</button></div>
+          <div class="key-st" id="keySt-openai"></div>
+        </div>
+      </div>
+      <div class="f">
+        <label>Creative入力方式</label>
+        <select id="inputMode" onchange="switchInputMode()">
+          <option value="text">テキスト（コピー・説明文）</option>
+          <option value="image">画像（バナー・OOH・LP）</option>
+          <option value="both">テキスト＋画像</option>
+        </select>
+        <div style="font-size:11px;color:var(--dim);margin-top:6px">PoC版：テキスト優先。画像はBase64変換後に送信。</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- CREATIVE INPUT -->
+    <div id="textInputArea">
+      <div class="f fg-1" style="margin-bottom:16px">
+        <label>クリエイティブ内容<span class="req">*</span><span class="opt">（バナーコピー、LPファーストビュー、キャンペーン訴求文など）</span></label>
+        <textarea id="creativeText" rows="6" placeholder="例：&#10;【楽天カード春キャンペーン】&#10;新規入会で最大8,000ポイントプレゼント！&#10;今だけ期間限定！2025年3月31日まで&#10;年会費永年無料&#10;エントリー＆利用で獲得&#10;＊ポイント還元には条件があります"></textarea>
+      </div>
+    </div>
+
+    <div id="imageInputArea" style="display:none">
+      <div class="f fg-1" style="margin-bottom:16px">
+        <label>画像アップロード<span class="opt">（バナー・OOH・LPスクリーンショット）</span></label>
+        <div class="upload-area" id="uploadArea" onclick="document.getElementById('imageFile').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleImageDrop(event)">
+          <div style="font-size:28px;margin-bottom:6px">🖼</div>
+          <div style="font-size:12px;color:var(--muted)">画像をドロップ、またはクリックして選択</div>
+          <div style="font-size:11px;color:var(--dim);margin-top:3px">PNG / JPG / WebP</div>
+          <img id="uploadPreview" class="upload-preview" />
+        </div>
+        <input type="file" id="imageFile" accept="image/*" style="display:none" onchange="handleImageFile(event)" />
+      </div>
+    </div>
+
+    <!-- META INFO -->
+    <div class="fg">
+      <div class="f"><label>商材・サービス</label><input type="text" id="metaProduct" placeholder="例：楽天カード春キャンペーン" /></div>
+      <div class="f"><label>掲出媒体・文脈</label><input type="text" id="metaMedium" placeholder="例：Instagramバナー、渋谷OOH" /></div>
+    </div>
+    <div class="fg">
+      <div class="f"><label>企業側の訴求意図</label><input type="text" id="metaIntent" placeholder="例：初めてのカードとして安心かつお得に感じてほしい" /></div>
+      <div class="f"><label>避けたい印象</label><input type="text" id="metaAvoid" placeholder="例：複雑・怪しい・安っぽい" /></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- PERSONA SELECT -->
+    <label style="display:block;margin-bottom:12px">診断に使うPersona<span class="req">*</span><span class="opt">（複数選択可。選択なし＝全5体）</span></label>
+    <div class="persona-grid" id="personaGrid"></div>
+
+    <div class="err-msg" id="errMsg"></div>
+
+    <div class="btn-row" style="margin-top:20px">
+      <button class="btn-primary" id="runBtn" onclick="runAnalysis()">
+        <span>診断スタート →</span>
+      </button>
+      <button class="btn-secondary" onclick="resetAll()">リセット</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loadingText">分析を開始しています...</div>
+  <div class="progress-bar-wrap" style="max-width:300px;margin:12px auto 0">
+    <div class="progress-bar" id="progressBar" style="width:0%"></div>
+  </div>
+</div>
+
+<!-- ===== STEP 2: CREATIVE UNDERSTANDING ===== -->
+<div class="card" id="understandingSection" style="display:none">
+  <div class="card-head">
+    <span class="card-badge">Step 2</span>
+    <span class="card-title">Creative Understanding</span>
+  </div>
+  <div class="card-body">
+    <div class="understanding-grid" id="understandingGrid"></div>
+  </div>
+</div>
+
+<!-- ===== STEP 3: PERSONA RESPONSES ===== -->
+<div class="card" id="personaSection" style="display:none">
+  <div class="card-head">
+    <span class="card-badge">Step 3</span>
+    <span class="card-title">Persona別 第一印象</span>
+  </div>
+  <div class="card-body">
+    <div id="personaResponses"></div>
+  </div>
+</div>
+
+<!-- ===== STEP 4: DISCUSSION ===== -->
+<div class="card" id="discussionSection" style="display:none">
+  <div class="card-head">
+    <span class="card-badge">Step 4</span>
+    <span class="card-title">仮想ユーザー座談会</span>
+  </div>
+  <div class="card-body">
+    <div class="discussion-log" id="discussionLog">
+      <div class="bubble-wrap" id="bubbleWrap"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== STEP 5: REPORT ===== -->
+<div class="card" id="reportSection" style="display:none">
+  <div class="card-head">
+    <span class="card-badge">Step 5</span>
+    <span class="card-title">Meaning Diagnosis レポート</span>
+  </div>
+
+  <!-- Overall Scores -->
+  <div class="card-body" style="padding-bottom:0">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:0.1em;margin-bottom:12px">OVERALL SCORES — 全Persona平均</div>
+    <div class="overall-score-grid" id="overallScores"></div>
+  </div>
+
+  <!-- Meaning Map -->
+  <div class="card-body" style="padding-top:0">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:0.1em;margin-bottom:12px;margin-top:8px">MEANING MAP</div>
+    <div class="meaning-map-wrap" id="meaningMapWrap">
+      <div class="meaning-map-inner" id="meaningMapInner">
+        <div class="meaning-map-axis x"></div>
+        <div class="meaning-map-axis y"></div>
+        <div class="meaning-map-label top">ポジティブ</div>
+        <div class="meaning-map-label bottom">ネガティブ</div>
+        <div class="meaning-map-label left">分かりにくい</div>
+        <div class="meaning-map-label right">分かりやすい</div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--dim);margin-top:8px;font-family:'IBM Plex Mono',monospace;">縦軸：印象（ポジ/ネガ）　横軸：理解のしやすさ</div>
+  </div>
+
+  <!-- Report Body -->
+  <div class="card-body" id="reportBody"></div>
+
+  <!-- Download -->
+  <div class="dl-bar">
+    <span class="dl-label">EXPORT</span>
+    <button class="btn-ghost" onclick="downloadReport()">↓ HTML</button>
+    <button class="btn-ghost" onclick="copyReport()">コピー</button>
+    <button class="btn-ghost" onclick="resetAll()">← 再入力</button>
+  </div>
+</div>
+
+</div><!-- /main-wrap -->
+
+<script>
+// ================================================================
+// SYNTHETIC MEANING SPACE v1.0
+// ================================================================
+
+const PERSONAS = [
+  {
+    id: 'zgirl', label: 'Z世代女子大生', emoji: '👩‍🎓', color: '#ff6bce',
+    attr: '20歳前後 / SNS・動画高接触 / インフルエンサー影響大',
+    desc: 'お得には反応するが条件が複雑だと離脱しやすい。デザイン・自分合い感を重視。',
+    tags: ['Z世代', 'SNS中心', 'お得感重視', 'デザイン重視'],
+    profile: 'あなたはZ世代の女子大生（20歳）です。日常的にInstagram・TikTok・YouTubeを使い、インフルエンサーの影響を受けやすい。お得なものには反応するが、条件が複雑だと面倒で離脱してしまう。デザインや「自分に合っている感」をとても重視する。クレジットカードを持ったことがない。'
+  },
+  {
+    id: 'newworker', label: '新社会人男性', emoji: '👔', color: '#7c6cff',
+    attr: '22〜25歳 / 初めての金融サービスに関心 / 信頼性重視',
+    desc: '失敗したくない心理が強い。機能性・公式感・安心感に反応しやすい。',
+    tags: ['新社会人', '信頼性重視', '安心感優先', '慎重派'],
+    profile: 'あなたは新社会人の男性（24歳）です。社会人1年目で、初めてクレジットカードや金融サービスの利用を考えている。失敗したくない心理が強く、機能性・信頼性・実利を重視する。公式感・安心感に反応しやすい。複雑な条件は読まずに不安になる。'
+  },
+  {
+    id: 'pointoholic', label: 'ポイント最適化層', emoji: '🔢', color: '#39ff6e',
+    attr: '年齢不問 / 楽天利用経験高 / SPU・買い回り理解済み',
+    desc: '還元率・上限条件に敏感。複雑さへの耐性が高いが条件改悪には厳しい。',
+    tags: ['楽天ヘビーユーザー', 'SPU理解', 'ポイント最適化', '条件精査派'],
+    profile: 'あなたは楽天経済圏を使いこなしているポイント最適化層（30代）です。SPU、買い回り、キャンペーン条件を熟知しており、還元率や上限条件に敏感。複雑さへの耐性が高いが、条件改悪や「見かけ倒し」のお得には厳しく批判する。'
+  },
+  {
+    id: 'lightuser', label: 'ライトユーザー', emoji: '😐', color: '#ffb800',
+    attr: '楽天利用経験あり / 細かい条件は読みたくない / 直感的理解を求める',
+    desc: '「結局いくら得なのか」が分からないと離脱。情報量が多いと面倒に感じる。',
+    tags: ['ライト層', 'ポイント好き', '条件嫌い', '直感派'],
+    profile: 'あなたは楽天を使ったことはあるが経済圏の仕組みはよく分からないライトユーザー（40代）です。ポイントは好きだが細かい条件は読みたくない。「結局いくら得なのか」が一瞬で分からないと離脱する。情報量が多いと面倒に感じてしまう。'
+  },
+  {
+    id: 'brandlover', label: 'ブランド感度層', emoji: '✨', color: '#00d4ff',
+    attr: '年齢不問 / デザイン・世界観・所有感を重視 / 販促感に敏感',
+    desc: 'お得だけでは動かない。安っぽさや過剰な販促感にネガティブ反応。',
+    tags: ['ブランド重視', '所有感優先', '過剰訴求嫌い', '世界観重視'],
+    profile: 'あなたはブランドや世界観を重視する消費者（30代）です。お得だけでは動かず、デザイン・世界観・所有感を重視する。安っぽさや過剰な販促感に非常に敏感で、キャンペーン色が強すぎるとブランド価値が下がったと感じる。'
+  }
+];
+
+const SCORE_AXES = [
+  { key: 'understanding', label: '理解しやすさ', color: '#7c6cff' },
+  { key: 'relevance',     label: '自分ごと感',   color: '#00d4ff' },
+  { key: 'trust',         label: '信頼感',        color: '#39ff6e' },
+  { key: 'deal',          label: 'お得感',        color: '#ffb800' },
+  { key: 'hassle',        label: '面倒感',        color: '#ff6bce', invert: true },
+  { key: 'suspicion',     label: '怪しさ',        color: '#ff4d6d', invert: true },
+  { key: 'action',        label: '行動意欲',      color: '#ffffff' }
+];
+
+let currentAI = 'claude-sonnet';
+let selectedPersonas = [];
+let imageBase64 = null;
+let analysisResult = null;
+let isLoading = false;
+
+const AI_LABELS = {
+  'claude-sonnet': 'Claude Sonnet',
+  'claude-haiku': 'Claude Haiku',
+  'gemini': 'Gemini 2.5 Flash Lite',
+  'openai': 'GPT-4o'
+};
+
+// ===== INIT =====
+window.addEventListener('load', function() {
+  renderPersonaGrid();
+  ['claude-sonnet', 'claude-haiku', 'gemini', 'openai'].forEach(function(ai) {
+    var saved = localStorage.getItem('sms_key_' + ai);
+    if (saved) {
+      var el = document.getElementById('apiKey-' + ai);
+      if (el) { el.value = saved; }
+      var st = document.getElementById('keySt-' + ai);
+      if (st) { st.textContent = '✓ 保存済み'; st.className = 'key-st ok'; }
+    }
+  });
+});
+
+function renderPersonaGrid() {
+  var html = '';
+  PERSONAS.forEach(function(p) {
+    html +=
+      '<div class="persona-card" id="pc-' + p.id + '" onclick="togglePersona(\'' + p.id + '\')">' +
+        '<div class="persona-name">' + p.emoji + ' ' + p.label + '</div>' +
+        '<div class="persona-desc">' + p.desc + '</div>' +
+        '<div class="persona-tags">' +
+          p.tags.map(function(t) { return '<span class="persona-tag">' + t + '</span>'; }).join('') +
+        '</div>' +
+      '</div>';
+  });
+  document.getElementById('personaGrid').innerHTML = html;
+}
+
+function togglePersona(id) {
+  var idx = selectedPersonas.indexOf(id);
+  if (idx >= 0) {
+    selectedPersonas.splice(idx, 1);
+    document.getElementById('pc-' + id).classList.remove('selected');
+  } else {
+    selectedPersonas.push(id);
+    document.getElementById('pc-' + id).classList.add('selected');
+  }
+}
+
+// ===== AI / KEY =====
+function selectAI(ai) {
+  currentAI = ai;
+  document.querySelectorAll('.ai-btn').forEach(function(b) { b.classList.remove('active'); });
+  document.querySelector('.ai-btn[data-ai="' + ai + '"]').classList.add('active');
+  document.querySelectorAll('.key-area').forEach(function(a) { a.classList.remove('active'); });
+  document.getElementById('key-' + ai).classList.add('active');
+}
+
+function saveKey(ai) {
+  var val = document.getElementById('apiKey-' + ai).value.trim();
+  if (!val) return;
+  localStorage.setItem('sms_key_' + ai, val);
+  var el = document.getElementById('keySt-' + ai);
+  el.textContent = '✓ 保存しました'; el.className = 'key-st ok';
+}
+
+function getKey() {
+  return localStorage.getItem('sms_key_' + currentAI) ||
+    (document.getElementById('apiKey-' + currentAI) ? document.getElementById('apiKey-' + currentAI).value.trim() : '');
+}
+
+// ===== INPUT MODE =====
+function switchInputMode() {
+  var mode = document.getElementById('inputMode').value;
+  document.getElementById('textInputArea').style.display = (mode === 'image') ? 'none' : 'block';
+  document.getElementById('imageInputArea').style.display = (mode === 'text') ? 'none' : 'block';
+}
+
+function handleImageFile(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    imageBase64 = e.target.result;
+    var prev = document.getElementById('uploadPreview');
+    prev.src = imageBase64; prev.classList.add('on');
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleImageDrop(event) {
+  event.preventDefault();
+  document.getElementById('uploadArea').classList.remove('drag');
+  var file = event.dataTransfer.files[0];
+  if (!file) return;
+  var input = document.getElementById('imageFile');
+  input.files = event.dataTransfer.files;
+  handleImageFile({ target: { files: [file] } });
+}
+
+// ===== STEP MANAGEMENT =====
+function setStep(n) {
+  for (var i = 1; i <= 5; i++) {
+    var el = document.getElementById('step' + i + '-item');
+    el.classList.remove('active', 'done');
+    if (i < n) el.classList.add('done');
+    else if (i === n) el.classList.add('active');
+  }
+}
+
+function setProgress(pct, text) {
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('loadingText').innerHTML = '<span class="loading-step">' + text + '</span>';
+}
+
+// ===== API CALLS =====
+async function callClaude(sys, user, model, imageData) {
+  var key = getKey();
+  model = model || (currentAI === 'claude-haiku' ? 'claude-haiku-4-5-20251001' : 'claude-sonnet-4-6');
+  var content = [];
+  if (imageData) {
+    var mimeMatch = imageData.match(/^data:([^;]+);base64,(.+)$/);
+    if (mimeMatch) {
+      content.push({ type: 'image', source: { type: 'base64', media_type: mimeMatch[1], data: mimeMatch[2] } });
+    }
+  }
+  content.push({ type: 'text', text: user });
+  var res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+    body: JSON.stringify({ model: model, max_tokens: 4000, system: sys, messages: [{ role: 'user', content: content }] })
+  });
+  if (!res.ok) { var e = await res.text(); throw new Error(res.status + ': ' + e.slice(0, 200)); }
+  var d = await res.json();
+  return d.content && d.content[0] ? d.content[0].text : '';
+}
+
+async function callGemini(sys, user, imageData) {
+  var key = getKey();
+  var parts = [];
+  if (imageData) {
+    var mimeMatch = imageData.match(/^data:([^;]+);base64,(.+)$/);
+    if (mimeMatch) parts.push({ inlineData: { mimeType: mimeMatch[1], data: mimeMatch[2] } });
+  }
+  parts.push({ text: user });
+  var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=' + key, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ system_instruction: { parts: [{ text: sys }] }, contents: [{ role: 'user', parts: parts }], generationConfig: { maxOutputTokens: 4000 } })
+  });
+  if (!res.ok) throw new Error(res.status);
+  var d = await res.json();
+  return (d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts)
+    ? d.candidates[0].content.parts.map(function(p) { return p.text || ''; }).join('') : '';
+}
+
+async function callOpenAI(sys, user, imageData) {
+  var key = getKey();
+  var content = [];
+  if (imageData) content.push({ type: 'image_url', image_url: { url: imageData } });
+  content.push({ type: 'text', text: user });
+  var res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+    body: JSON.stringify({ model: 'gpt-4o', max_tokens: 4000, messages: [{ role: 'system', content: sys }, { role: 'user', content: content }] })
+  });
+  if (!res.ok) throw new Error(res.status);
+  var d = await res.json();
+  return d.choices && d.choices[0] ? d.choices[0].message.content : '';
+}
+
+async function callAI(sys, user, imageData) {
+  var ai = currentAI;
+  if (ai === 'claude-sonnet' || ai === 'claude-haiku') return callClaude(sys, user, null, imageData);
+  if (ai === 'gemini') return callGemini(sys, user, imageData);
+  return callOpenAI(sys, user, imageData);
+}
+
+// ===== MAIN ANALYSIS =====
+async function runAnalysis() {
+  if (isLoading) return;
+  var key = getKey();
+  if (!key) { alert(AI_LABELS[currentAI] + ' のAPIキーを入力・保存してください'); return; }
+
+  var mode = document.getElementById('inputMode').value;
+  var creativeText = document.getElementById('creativeText').value.trim();
+  var hasImage = imageBase64 && (mode === 'image' || mode === 'both');
+  if (!creativeText && !hasImage) {
+    document.getElementById('errMsg').textContent = 'クリエイティブ内容（テキストまたは画像）を入力してください。';
+    document.getElementById('errMsg').classList.add('on');
+    return;
+  }
+  document.getElementById('errMsg').classList.remove('on');
+
+  var personas = selectedPersonas.length > 0
+    ? PERSONAS.filter(function(p) { return selectedPersonas.indexOf(p.id) >= 0; })
+    : PERSONAS;
+
+  var metaProduct = document.getElementById('metaProduct').value.trim();
+  var metaMedium = document.getElementById('metaMedium').value.trim();
+  var metaIntent = document.getElementById('metaIntent').value.trim();
+  var metaAvoid = document.getElementById('metaAvoid').value.trim();
+
+  var creativeContext = buildCreativeContext(creativeText, metaProduct, metaMedium, metaIntent, metaAvoid);
+
+  isLoading = true;
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('loadingOverlay').classList.add('on');
+
+  try {
+    // Step 2: Creative Understanding
+    setStep(2);
+    setProgress(10, 'Step 2: Creative Understanding 解析中...');
+    var understanding = await runCreativeUnderstanding(creativeContext, hasImage ? imageBase64 : null);
+    renderUnderstanding(understanding);
+    document.getElementById('understandingSection').style.display = 'block';
+    document.getElementById('understandingSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // Step 3: Persona Interpretations
+    setStep(3);
+    var personaResults = [];
+    for (var i = 0; i < personas.length; i++) {
+      var pct = 20 + Math.round(40 * (i + 1) / personas.length);
+      setProgress(pct, 'Step 3: Persona解釈 — ' + personas[i].label + ' (' + (i + 1) + '/' + personas.length + ')');
+      var result = await runPersonaInterpretation(personas[i], creativeContext, understanding, hasImage ? imageBase64 : null);
+      result.persona = personas[i];
+      personaResults.push(result);
+    }
+    document.getElementById('personaSection').style.display = 'block';
+    renderPersonaResponses(personaResults);
+
+    // Step 4: Discussion
+    setStep(4);
+    setProgress(70, 'Step 4: 座談会 生成中...');
+    var discussion = await runDiscussion(personas, creativeContext, personaResults, hasImage ? imageBase64 : null);
+    document.getElementById('discussionSection').style.display = 'block';
+    renderDiscussion(discussion, personas);
+
+    // Step 5: Insight Extraction + Report
+    setStep(5);
+    setProgress(85, 'Step 5: Meaning診断 レポート生成中...');
+    var report = await runInsightExtraction(creativeContext, personaResults, discussion);
+    document.getElementById('reportSection').style.display = 'block';
+    renderReport(personaResults, report);
+
+    analysisResult = { understanding: understanding, personaResults: personaResults, discussion: discussion, report: report };
+    setProgress(100, '完了！');
+    setTimeout(function() {
+      document.getElementById('loadingOverlay').classList.remove('on');
+      document.getElementById('reportSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 600);
+
+  } catch(err) {
+    console.error('[runAnalysis] error:', err);
+    document.getElementById('loadingOverlay').classList.remove('on');
+    var msg = err.message || '';
+    document.getElementById('errMsg').textContent = msg.includes('429')
+      ? '⚠️ レート制限（429）：しばらく待ってから再試行してください。'
+      : 'エラーが発生しました（' + msg + '）。APIキーを確認してください。';
+    document.getElementById('errMsg').classList.add('on');
+  }
+
+  isLoading = false;
+  document.getElementById('runBtn').disabled = false;
+}
+
+// ===== CREATIVE CONTEXT BUILDER =====
+function buildCreativeContext(text, product, medium, intent, avoid) {
+  var ctx = '【クリエイティブ内容】\n' + (text || '（テキストなし）');
+  if (product) ctx += '\n\n【商材・サービス】' + product;
+  if (medium) ctx += '\n【掲出媒体・文脈】' + medium;
+  if (intent) ctx += '\n【企業側の訴求意図】' + intent;
+  if (avoid) ctx += '\n【避けたい印象】' + avoid;
+  return ctx;
+}
+
+// ===== STEP 2: CREATIVE UNDERSTANDING =====
+async function runCreativeUnderstanding(ctx, imageData) {
+  var sys = 'あなたは広告クリエイティブの分析専門家です。入力されたクリエイティブを客観的に分析し、企業側の意図とユーザーへの見え方を整理してください。必ずJSONのみを返してください。';
+  var user = ctx + '\n\n以下のJSON形式で分析結果を返してください：\n{"main_appeal":"主訴求","sub_appeal":"副訴求","target_impression":"想定ターゲット","info_density":"情報量（少ない/普通/多い）","first_impression":"第一印象（2文）","clear_points":["分かりやすい点1","分かりやすい点2"],"unclear_points":["分かりにくい点1","分かりにくい点2"],"potential_misunderstanding":["誤解されそうな点1"],"cta":"CTA（あれば）","company_intent":"企業側の意図推定（1文）"}';
+  var raw = await callAI(sys, user, imageData);
+  try {
+    return JSON.parse(raw.replace(/```json|```/g, '').trim());
+  } catch(e) {
+    return { main_appeal: '解析失敗', sub_appeal: '', target_impression: '', info_density: '', first_impression: raw.slice(0, 200), clear_points: [], unclear_points: [], potential_misunderstanding: [], cta: '', company_intent: '' };
+  }
+}
+
+// ===== STEP 3: PERSONA INTERPRETATION =====
+async function runPersonaInterpretation(persona, ctx, understanding, imageData) {
+  var sys = 'あなたは以下のPersonaです。広告に対して、配慮なく率直な生活者として回答してください。必ずJSONのみを返してください。\n\nPersona：' + persona.profile;
+  var user = '以下の広告を初めて見た場合の率直な第一印象を教えてください。\n\n' + ctx + '\n\n【Creative Understanding参考】\n主訴求：' + understanding.main_appeal + '\n第一印象：' + understanding.first_impression + '\n\n以下のJSONで回答（すべて日本語）：\n{"first_impression":"第一印象（2〜3文）","what_product":"何の商品・サービスだと思ったか","self_relevant":"自分向けだと感じるか（yes/maybe/no）と理由","appeal":"魅力に感じた点（なければ空）","anxiety":"不安・違和感（なければ空）","want_action":"詳細を見たいか（1〜5の数値）","action_reason":"その理由","scores":{"understanding":1〜5の数値,"relevance":1〜5の数値,"trust":1〜5の数値,"deal":1〜5の数値,"hassle":1〜5の数値,"suspicion":1〜5の数値,"action":1〜5の数値},"key_quote":"このPersonaを象徴するひと言"}';
+  var raw = await callAI(sys, user, imageData);
+  try {
+    return JSON.parse(raw.replace(/```json|```/g, '').trim());
+  } catch(e) {
+    return {
+      first_impression: raw.slice(0, 300), what_product: '', self_relevant: 'maybe', appeal: '', anxiety: '',
+      want_action: 3, action_reason: '',
+      scores: { understanding: 3, relevance: 3, trust: 3, deal: 3, hassle: 3, suspicion: 2, action: 3 },
+      key_quote: ''
+    };
+  }
+}
+
+// ===== STEP 4: DISCUSSION =====
+async function runDiscussion(personas, ctx, results, imageData) {
+  var summaries = results.map(function(r) {
+    return '【' + r.persona.label + '】\n' +
+      '第一印象：' + r.first_impression + '\n' +
+      '魅力：' + (r.appeal || 'なし') + '\n' +
+      '不安：' + (r.anxiety || 'なし') + '\n' +
+      'ひと言：「' + (r.key_quote || '') + '」';
+  }).join('\n\n');
+
+  var personaNames = personas.map(function(p) { return p.label; }).join('・');
+
+  var sys = 'あなたは座談会のファシリテーターです。以下のPersonaたちが同じ広告について意見を交わす座談会を再現してください。全員が同じ意見にまとまる必要はありません。意見の違い・誤解・違和感・納得ポイントを明確にしてください。各発言は日本語の自然な話し言葉で。';
+  var user = '参加者：' + personaNames + '\n\n' + ctx + '\n\n【各Personaの個別回答】\n' + summaries + '\n\n以下のJSON形式で座談会を生成してください。最低8発言、最大16発言。意見が割れる場面を必ず含めてください：\n{"turns":[{"persona":"Persona名","text":"発言内容"},...],"conflicts":["割れた意見1","割れた意見2"],"consensus_positive":["共通してポジティブだった点"],"consensus_negative":["共通してネガティブだった点"]}';
+  var raw = await callAI(sys, user, null);
+  try {
+    return JSON.parse(raw.replace(/```json|```/g, '').trim());
+  } catch(e) {
+    return { turns: [{ persona: '（解析失敗）', text: raw.slice(0, 300) }], conflicts: [], consensus_positive: [], consensus_negative: [] };
+  }
+}
+
+// ===== STEP 5: INSIGHT EXTRACTION =====
+async function runInsightExtraction(ctx, personaResults, discussion) {
+  var personaScores = personaResults.map(function(r) {
+    return '【' + r.persona.label + '】スコア：' + JSON.stringify(r.scores);
+  }).join('\n');
+
+  var sys = 'あなたはマーケティングリサーチの専門家です。仮想ユーザー座談会の結果からCreativeの改善に使える示唆を抽出してください。必ずJSONのみを返してください。';
+  var user = ctx + '\n\n【Personaスコア】\n' + personaScores + '\n\n【座談会での共通ポジティブ】\n' + (discussion.consensus_positive || []).join('、') + '\n\n【座談会での共通ネガティブ】\n' + (discussion.consensus_negative || []).join('、') + '\n\n【意見が割れた点】\n' + (discussion.conflicts || []).join('、') + '\n\n以下のJSON形式で示唆を抽出してください：\n{"understood_meaning":["共通して伝わった意味"],"not_understood_meaning":["伝わらなかった意味"],"interpretation_conflicts":[{"topic":"テーマ","details":"詳細"}],"friction_sources":["不安・面倒・怪しさの発生源"],"copy_improvements":["改善すべきコピー"],"design_improvements":["改善すべきデザイン要素"],"hypotheses_to_verify":["次に検証すべき仮説"],"overall_diagnosis":"総合診断（3〜5文）","strength_summary":"訴求の強み（2文）","gap_summary":"企業意図とユーザー解釈のズレ（2文）"}';
+  var raw = await callAI(sys, user, null);
+  try {
+    return JSON.parse(raw.replace(/```json|```/g, '').trim());
+  } catch(e) {
+    return {
+      understood_meaning: [], not_understood_meaning: [], interpretation_conflicts: [],
+      friction_sources: [], copy_improvements: [], design_improvements: [], hypotheses_to_verify: [],
+      overall_diagnosis: raw.slice(0, 400), strength_summary: '', gap_summary: ''
+    };
+  }
+}
+
+// ===== UTIL: normalize any value to Array =====
+function toArray(val) {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'string') return val.split(/[、,，\n]+/).map(function(s){ return s.trim(); }).filter(Boolean);
+  return [String(val)];
+}
+
+// ===== RENDER: UNDERSTANDING =====
+function renderUnderstanding(u) {
+  var cards = [
+    { label: 'MAIN APPEAL', val: u.main_appeal },
+    { label: 'SUB APPEAL', val: u.sub_appeal || '—' },
+    { label: '想定ターゲット', val: u.target_impression || '—' },
+    { label: '情報量', val: u.info_density || '—' },
+    { label: 'CTA', val: u.cta || 'なし' },
+    { label: '企業側の意図推定', val: u.company_intent || '—' }
+  ];
+  var html = cards.map(function(c) {
+    return '<div class="ug-card"><div class="ug-label">' + c.label + '</div><div class="ug-val">' + escHtml(c.val) + '</div></div>';
+  }).join('');
+
+  var clearPts = toArray(u.clear_points);
+  if (clearPts.length) {
+    html += '<div class="ug-card" style="grid-column:span 2"><div class="ug-label">分かりやすい点</div><div class="ug-val">' +
+      clearPts.map(function(p) { return '✓ ' + escHtml(p); }).join('<br>') + '</div></div>';
+  }
+  var unclearPts = toArray(u.unclear_points);
+  if (unclearPts.length) {
+    html += '<div class="ug-card" style="grid-column:span 2;border-color:rgba(255,184,0,0.25)"><div class="ug-label" style="color:var(--warn)">分かりにくい点</div><div class="ug-val">' +
+      unclearPts.map(function(p) { return '⚠ ' + escHtml(p); }).join('<br>') + '</div></div>';
+  }
+  var misunderPts = toArray(u.potential_misunderstanding);
+  if (misunderPts.length) {
+    html += '<div class="ug-card" style="grid-column:span 2;border-color:rgba(255,77,109,0.25)"><div class="ug-label" style="color:var(--danger)">誤解されそうな点</div><div class="ug-val">' +
+      misunderPts.map(function(p) { return '⚡ ' + escHtml(p); }).join('<br>') + '</div></div>';
+  }
+
+  document.getElementById('understandingGrid').innerHTML = html;
+}
+
+// ===== RENDER: PERSONA RESPONSES =====
+function renderPersonaResponses(results) {
+  var html = '';
+  var colors = { zgirl: '#ff6bce', newworker: '#7c6cff', pointoholic: '#39ff6e', lightuser: '#ffb800', brandlover: '#00d4ff' };
+
+  results.forEach(function(r) {
+    var p = r.persona;
+    var color = colors[p.id] || '#7c6cff';
+    var selfMap = { yes: '✓ 自分向けと感じる', maybe: '△ どちらとも言えない', no: '✗ 自分向けではない' };
+
+    var scoreHtml = '<div class="score-grid">';
+    SCORE_AXES.forEach(function(ax) {
+      var raw = (r.scores && r.scores[ax.key]) ? parseInt(r.scores[ax.key]) : 3;
+      var val = Math.min(5, Math.max(1, raw));
+      var pct = (val / 5) * 100;
+      scoreHtml += '<div class="score-row">' +
+        '<div class="score-label">' + ax.label + '</div>' +
+        '<div class="score-bar-wrap"><div class="score-bar" style="width:0%;background:' + ax.color + '" data-w="' + pct + '"></div></div>' +
+        '<div class="score-val" style="color:' + ax.color + '">' + val + '</div>' +
+        '</div>';
+    });
+    scoreHtml += '</div>';
+
+    html +=
+      '<div class="persona-response">' +
+        '<div class="persona-response-header">' +
+          '<div class="persona-avatar" style="background:' + color + '22;border:1px solid' + color + '44">' + p.emoji + '</div>' +
+          '<div>' +
+            '<div class="persona-response-name" style="color:' + color + '">' + p.label + '</div>' +
+            '<div class="persona-response-attr">' + p.attr + '</div>' +
+          '</div>' +
+          (r.key_quote ? '<div style="margin-left:auto;background:var(--surface3);border-radius:6px;padding:6px 12px;font-size:12px;color:var(--text);max-width:200px;font-style:italic">"' + escHtml(r.key_quote) + '"</div>' : '') +
+        '</div>' +
+        '<div class="persona-scores" id="ps-' + p.id + '">' + scoreHtml + '</div>' +
+        '<div class="persona-comment">' +
+          '<div style="margin-bottom:8px">' + escHtml(r.first_impression) + '</div>' +
+          (r.appeal ? '<div><span class="pos">▲ 魅力：</span>' + escHtml(r.appeal) + '</div>' : '') +
+          (r.anxiety ? '<div><span class="neg">▼ 不安：</span>' + escHtml(r.anxiety) + '</div>' : '') +
+          '<div style="margin-top:6px;color:var(--muted);font-size:12px">' + (selfMap[r.self_relevant] || '') + '</div>' +
+        '</div>' +
+      '</div>';
+  });
+
+  document.getElementById('personaResponses').innerHTML = html;
+  setTimeout(function() {
+    document.querySelectorAll('.score-bar').forEach(function(bar) {
+      bar.style.width = bar.getAttribute('data-w') + '%';
+    });
+  }, 100);
+}
+
+// ===== RENDER: DISCUSSION =====
+function renderDiscussion(discussion, personas) {
+  var personaMap = {};
+  personas.forEach(function(p) { personaMap[p.label] = p; });
+  var colors = { zgirl: '#c0392b', newworker: '#d4a017', pointoholic: '#e8c84a', lightuser: '#e07b30', brandlover: '#9e6b3a' };
+
+  var turns = toArray(discussion.turns);
+  var html = '';
+
+  turns.forEach(function(turn, idx) {
+    if (typeof turn === 'string') return; // skip malformed
+    var p = null;
+    personas.forEach(function(pe) { if (pe.label === turn.persona) p = pe; });
+    var color = p ? (colors[p.id] || '#c0392b') : '#9e8c72';
+    var emoji = p ? p.emoji : '🗣';
+    var isRight = idx % 2 === 1;
+
+    html +=
+      '<div class="bubble ' + (isRight ? 'bubble-right' : 'bubble-left') + '">' +
+        '<div class="bubble-meta">' + emoji + ' ' + escHtml(turn.persona) + '</div>' +
+        '<div class="bubble-body" style="border-left: 2px solid ' + color + '44">' + escHtml(turn.text) + '</div>' +
+      '</div>';
+  });
+
+  document.getElementById('bubbleWrap').innerHTML = html;
+
+  var consPos = toArray(discussion.consensus_positive);
+  var consNeg = toArray(discussion.consensus_negative);
+  var conflicts = toArray(discussion.conflicts);
+
+  if (conflicts.length || consPos.length || consNeg.length) {
+    var summaryHtml = '<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">';
+    if (consPos.length) {
+      summaryHtml += '<div style="margin-bottom:10px"><div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:var(--accent3);letter-spacing:.1em;margin-bottom:6px">CONSENSUS POSITIVE</div>' +
+        consPos.map(function(c) { return '<div style="font-size:12px;color:var(--muted);margin-bottom:3px">✓ ' + escHtml(c) + '</div>'; }).join('') + '</div>';
+    }
+    if (consNeg.length) {
+      summaryHtml += '<div style="margin-bottom:10px"><div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:var(--danger);letter-spacing:.1em;margin-bottom:6px">CONSENSUS NEGATIVE</div>' +
+        consNeg.map(function(c) { return '<div style="font-size:12px;color:var(--muted);margin-bottom:3px">✗ ' + escHtml(c) + '</div>'; }).join('') + '</div>';
+    }
+    if (conflicts.length) {
+      summaryHtml += '<div><div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:var(--warn);letter-spacing:.1em;margin-bottom:6px">CONFLICTS — 意見が割れた点</div>' +
+        conflicts.map(function(c) { return '<div class="conflict-row"><div class="conflict-icon">⚡</div><div class="conflict-text">' + escHtml(c) + '</div></div>'; }).join('') + '</div>';
+    }
+    summaryHtml += '</div>';
+    document.getElementById('discussionLog').insertAdjacentHTML('beforeend', summaryHtml);
+  }
+}
+
+// ===== RENDER: REPORT =====
+function renderReport(personaResults, report) {
+  var scoreKeys = ['understanding', 'relevance', 'trust', 'deal', 'hassle', 'suspicion', 'action'];
+  var avgScores = {};
+  scoreKeys.forEach(function(k) {
+    var sum = 0, cnt = 0;
+    personaResults.forEach(function(r) {
+      if (r.scores && r.scores[k]) { sum += parseInt(r.scores[k]); cnt++; }
+    });
+    avgScores[k] = cnt > 0 ? (sum / cnt).toFixed(1) : 3;
+  });
+
+  var scoreColors = { understanding: '#7c6cff', relevance: '#00d4ff', trust: '#39ff6e', deal: '#ffb800', hassle: '#ff6bce', suspicion: '#ff4d6d', action: '#ffffff' };
+  var scoreLabels = { understanding: '理解', relevance: '自分ごと', trust: '信頼', deal: 'お得感', hassle: '面倒感', suspicion: '怪しさ', action: '行動意欲' };
+
+  var overallHtml = scoreKeys.filter(function(k) { return ['understanding','relevance','trust','deal','hassle','suspicion','action'].indexOf(k) >= 0; }).slice(0, 8).map(function(k) {
+    var val = parseFloat(avgScores[k]);
+    var pct = (val / 5) * 100;
+    var col = scoreColors[k] || '#7c6cff';
+    return '<div class="oscore-card">' +
+      '<div class="oscore-label">' + scoreLabels[k] + '</div>' +
+      '<div class="oscore-val" style="color:' + col + '">' + val + '<span class="oscore-max">/5</span></div>' +
+      '<div class="oscore-bar" style="background:' + col + '33;width:100%"><div style="height:100%;width:' + pct + '%;background:' + col + ';border-radius:3px;transition:width 0.7s ease"></div></div>' +
+    '</div>';
+  }).join('');
+  document.getElementById('overallScores').innerHTML = overallHtml;
+
+  // Meaning Map
+  renderMeaningMap(personaResults);
+
+  // Report body
+  var bodyHtml = '';
+
+  // 1. 総合診断
+  if (report.overall_diagnosis) {
+    bodyHtml += buildReportSection('1', '総合診断',
+      '<div style="font-size:13px;color:var(--text);line-height:1.8;background:var(--surface2);border-radius:8px;padding:14px 16px;border-left:3px solid var(--accent)">' + escHtml(report.overall_diagnosis) + '</div>');
+  }
+
+  // 2. 訴求の強み
+  var understoodArr = toArray(report.understood_meaning);
+  if (report.strength_summary || understoodArr.length) {
+    var content = '';
+    if (report.strength_summary) content += '<div style="font-size:13px;color:var(--text);line-height:1.8;margin-bottom:10px">' + escHtml(report.strength_summary) + '</div>';
+    if (understoodArr.length) {
+      content += '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:var(--accent3);letter-spacing:.1em;margin-bottom:6px">共通して伝わった意味</div>' +
+        understoodArr.map(function(m) { return '<div style="font-size:12px;color:var(--muted);margin-bottom:3px">✓ ' + escHtml(m) + '</div>'; }).join('');
+    }
+    bodyHtml += buildReportSection('2', '訴求の強み', content);
+  }
+
+  // 3. 意味のズレ
+  var gapContent = '';
+  if (report.gap_summary) gapContent += '<div style="font-size:13px;color:var(--text);line-height:1.8;margin-bottom:10px">' + escHtml(report.gap_summary) + '</div>';
+  var notUnderstoodArr = toArray(report.not_understood_meaning);
+  if (notUnderstoodArr.length) {
+    gapContent += '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:var(--warn);letter-spacing:.1em;margin-bottom:6px">伝わらなかった意味</div>' +
+      notUnderstoodArr.map(function(m) { return '<div style="font-size:12px;color:var(--muted);margin-bottom:3px">⚠ ' + escHtml(m) + '</div>'; }).join('');
+  }
+  var conflictsArr = toArray(report.interpretation_conflicts);
+  if (conflictsArr.length) {
+    gapContent += '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:var(--danger);letter-spacing:.1em;margin:12px 0 6px">Persona間の解釈対立</div>' +
+      conflictsArr.map(function(c) {
+        if (typeof c === 'string') return '<div class="conflict-row"><div class="conflict-icon">⚡</div><div class="conflict-text">' + escHtml(c) + '</div></div>';
+        return '<div class="conflict-row"><div class="conflict-icon">⚡</div><div class="conflict-text"><strong>' + escHtml(c.topic || '') + '</strong><br>' + escHtml(c.details || '') + '</div></div>';
+      }).join('');
+  }
+  if (gapContent) bodyHtml += buildReportSection('3', '意味のズレ', gapContent);
+
+  // 4. Friction / Anxiety / Confusion
+  var frictionArr = toArray(report.friction_sources);
+  if (frictionArr.length) {
+    var frictionHtml = frictionArr.map(function(f) {
+      return '<div class="friction-card"><div class="friction-card-label">FRICTION / ANXIETY</div><div style="font-size:13px;color:var(--text);line-height:1.7">' + escHtml(f) + '</div></div>';
+    }).join('');
+    bodyHtml += buildReportSection('4', 'Friction / Anxiety / Confusion', frictionHtml);
+  }
+
+  // 5. 改善提案
+  var improveContent = '';
+  var copyArr = toArray(report.copy_improvements);
+  if (copyArr.length) {
+    improveContent += '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:var(--accent3);letter-spacing:.1em;margin-bottom:8px">コピー改善</div>' +
+      copyArr.map(function(c) {
+        return '<div class="improvement-card"><div class="improvement-card-label">COPY</div><div class="improvement-card-body">' + escHtml(c) + '</div></div>';
+      }).join('');
+  }
+  var designArr = toArray(report.design_improvements);
+  if (designArr.length) {
+    improveContent += '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:var(--accent2);letter-spacing:.1em;margin:12px 0 8px">デザイン改善</div>' +
+      designArr.map(function(c) {
+        return '<div class="improvement-card" style="border-color:rgba(212,160,23,0.2)"><div class="improvement-card-label" style="color:var(--accent2)">DESIGN</div><div class="improvement-card-body">' + escHtml(c) + '</div></div>';
+      }).join('');
+  }
+  if (improveContent) bodyHtml += buildReportSection('5', '改善提案', improveContent);
+
+  // 6. 次に検証すべき仮説
+  var hypArr = toArray(report.hypotheses_to_verify);
+  if (hypArr.length) {
+    var hypHtml = hypArr.map(function(h) {
+      return '<div class="hypothesis-card"><div class="hypothesis-card-label">HYPOTHESIS</div><div style="font-size:13px;color:var(--text);line-height:1.7">' + escHtml(h) + '</div></div>';
+    }).join('');
+    bodyHtml += buildReportSection('6', '次に人間調査すべき論点', hypHtml);
+  }
+
+  document.getElementById('reportBody').innerHTML = bodyHtml;
+}
+
+function buildReportSection(num, title, content) {
+  return '<div class="report-section">' +
+    '<div class="report-section-title"><div class="report-number">' + num + '</div>' + title + '</div>' +
+    content +
+    '</div>';
+}
+
+// ===== MEANING MAP =====
+function renderMeaningMap(personaResults) {
+  var colors = { zgirl: '#ff6bce', newworker: '#7c6cff', pointoholic: '#39ff6e', lightuser: '#ffb800', brandlover: '#00d4ff' };
+  var dots = '';
+  personaResults.forEach(function(r) {
+    var p = r.persona;
+    var color = colors[p.id] || '#7c6cff';
+    var s = r.scores || {};
+    var understanding = parseInt(s.understanding || 3);
+    var suspicion = parseInt(s.suspicion || 2);
+    var hassle = parseInt(s.hassle || 3);
+    var deal = parseInt(s.deal || 3);
+    var trust = parseInt(s.trust || 3);
+
+    var x = ((understanding - 1) / 4) * 80 + 10;
+    var positivity = ((deal + trust - suspicion - hassle) + 4) / 12;
+    var y = (1 - positivity) * 80 + 10;
+
+    dots += '<div class="meaning-dot" style="left:' + x.toFixed(1) + '%;top:' + y.toFixed(1) + '%;background:' + color + '33;border:2px solid ' + color + '" title="' + p.label + '">' +
+      p.emoji +
+      '<div class="meaning-dot-label">' + p.label.slice(0, 6) + '</div>' +
+    '</div>';
+  });
+  var inner = document.getElementById('meaningMapInner');
+  inner.insertAdjacentHTML('beforeend', dots);
+}
+
+// ===== RESET =====
+function resetAll() {
+  document.getElementById('creativeText').value = '';
+  document.getElementById('metaProduct').value = '';
+  document.getElementById('metaMedium').value = '';
+  document.getElementById('metaIntent').value = '';
+  document.getElementById('metaAvoid').value = '';
+  document.getElementById('inputMode').value = 'text';
+  switchInputMode();
+  imageBase64 = null;
+  selectedPersonas = [];
+  document.querySelectorAll('.persona-card').forEach(function(c) { c.classList.remove('selected'); });
+  document.getElementById('uploadPreview').classList.remove('on');
+
+  ['understandingSection', 'personaSection', 'discussionSection', 'reportSection'].forEach(function(id) {
+    document.getElementById(id).style.display = 'none';
+  });
+  document.getElementById('meaningMapInner').querySelectorAll('.meaning-dot').forEach(function(d) { d.remove(); });
+  document.getElementById('errMsg').classList.remove('on');
+  document.getElementById('loadingOverlay').classList.remove('on');
+  setStep(1);
+  analysisResult = null;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ===== DOWNLOAD =====
+function downloadReport() {
+  if (!analysisResult) return;
+  var html = document.documentElement.outerHTML;
+  var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'meaning-report-' + Date.now() + '.html';
+  a.click();
+}
+
+function copyReport() {
+  var body = document.getElementById('reportBody');
+  if (!body) return;
+  navigator.clipboard.writeText(body.innerText).then(function() {
+    alert('レポートをクリップボードにコピーしました');
+  });
+}
+
+// ===== UTIL =====
+function escHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/\n/g, '<br>');
+}
+</script>
+</body>
+</html>
