@@ -544,7 +544,9 @@ textarea { min-height: 80px; resize: vertical; line-height: 1.7; }
   <!-- Download -->
   <div class="dl-bar">
     <span class="dl-label">EXPORT</span>
-    <button class="btn-ghost" onclick="downloadReport()">↓ HTML</button>
+    <button class="btn-ghost" onclick="downloadHTML()">↓ HTML</button>
+    <button class="btn-ghost" onclick="downloadPDF()">↓ PDF</button>
+    <button class="btn-ghost" onclick="downloadJSON()">↓ JSON</button>
     <button class="btn-ghost" onclick="copyReport()">コピー</button>
     <button class="btn-ghost" onclick="resetAll()">← 再入力</button>
   </div>
@@ -1467,13 +1469,76 @@ function resetAll() {
 }
 
 // ===== DOWNLOAD =====
-function downloadReport() {
+function maskApiKeys(html) {
+  // mask values stored in localStorage-populated inputs
+  return html
+    .replace(/(value=")[^"]{8,}(")/g, function(match, pre, post) {
+      // only mask inputs that look like API keys (long alphanum strings)
+      return pre + '****' + post;
+    })
+    .replace(/('x-api-key'\s*:\s*')[^']+(')/g, "$1****$2")
+    .replace(/("x-api-key"\s*:\s*")[^"]+(")/g, '$1****$2')
+    .replace(/(Authorization['"]?\s*:\s*['"]Bearer )[^\s'"]+/g, '$1****');
+}
+
+function downloadHTML() {
   if (!analysisResult) return;
-  var html = document.documentElement.outerHTML;
+  var html = maskApiKeys(document.documentElement.outerHTML);
   var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'meaning-report-' + Date.now() + '.html';
+  a.click();
+}
+
+function downloadPDF() {
+  if (!analysisResult) return;
+  // inject print styles temporarily
+  var styleId = 'print-style-tmp';
+  if (!document.getElementById(styleId)) {
+    var s = document.createElement('style');
+    s.id = styleId;
+    s.textContent = [
+      '@media print {',
+      '  .steps-bar, .dl-bar, #step1Section, #loadingOverlay { display:none!important; }',
+      '  .card { break-inside:avoid; border:1px solid #ccc!important; margin-bottom:16px; }',
+      '  body { background:#fff!important; color:#111!important; }',
+      '  .card-head { border-left:3px solid #c0392b!important; }',
+      '  .tab-bar { display:none!important; }',
+      '  #tab-panel-first, #tab-panel-timeline, #tab-panel-exit { display:block!important; }',
+      '  canvas { max-width:100%!important; }',
+      '}'
+    ].join('\n');
+    document.head.appendChild(s);
+  }
+  window.print();
+}
+
+function downloadJSON() {
+  if (!analysisResult) return;
+  var exportData = {
+    exported_at: new Date().toISOString(),
+    version: 'v1.1',
+    creative_context: document.getElementById('creativeText') ? document.getElementById('creativeText').value : '',
+    product: document.getElementById('metaProduct') ? document.getElementById('metaProduct').value : '',
+    medium: document.getElementById('metaMedium') ? document.getElementById('metaMedium').value : '',
+    understanding: analysisResult.understanding,
+    persona_results: (analysisResult.personaResults || []).map(function(r) {
+      return { persona: r.persona ? r.persona.label : '', scores: r.scores, first_impression: r.first_impression, comment: r.comment };
+    }),
+    timeline_results: (analysisResult.timelineResults || []).map(function(r) {
+      return { persona: r.persona ? r.persona.label : '', stages: r.stages, exit_timing: r.exit_timing, exit_type: r.exit_type, exit_reason: r.exit_reason, exit_trigger: r.exit_trigger, exit_improvement: r.exit_improvement };
+    }),
+    memory_results: (analysisResult.memoryResults || []).map(function(r) {
+      return { persona: r.persona ? r.persona.label : '', remembered_words: r.remembered_words, brand_memory: r.brand_memory, emotion_memory: r.emotion_memory, memory_stability: r.memory_stability, key_memory_quote: r.key_memory_quote };
+    }),
+    discussion: analysisResult.discussion,
+    report: analysisResult.report
+  };
+  var blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json;charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'meaning-data-' + Date.now() + '.json';
   a.click();
 }
 
