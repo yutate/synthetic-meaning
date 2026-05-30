@@ -416,8 +416,36 @@ textarea { min-height: 80px; resize: vertical; line-height: 1.7; }
     <div class="divider"></div>
 
     <!-- PERSONA SELECT -->
-    <label style="display:block;margin-bottom:12px">診断に使うPersona<span class="req">*</span><span class="opt">（複数選択可。選択なし＝全5体）</span></label>
-    <div class="persona-grid" id="personaGrid"></div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+      <label style="margin:0">診断に使うPersona<span class="req">*</span></label>
+      <div style="display:flex;gap:4px">
+        <button class="btn-ghost" id="modeDefaultBtn" onclick="setPersonaMode('default')" style="font-size:11px;padding:4px 12px;border:1px solid var(--accent2);color:var(--accent2)">デフォルト</button>
+        <button class="btn-ghost" id="modeCustomBtn" onclick="setPersonaMode('custom')" style="font-size:11px;padding:4px 12px;border:1px solid var(--border2)">Persona Talk JSON</button>
+      </div>
+    </div>
+
+    <!-- DEFAULT MODE -->
+    <div id="defaultPersonaArea">
+      <div style="font-size:11px;color:var(--dim);margin-bottom:10px">複数選択可。選択なし＝全5体</div>
+      <div class="persona-grid" id="personaGrid"></div>
+    </div>
+
+    <!-- CUSTOM MODE -->
+    <div id="customPersonaArea" style="display:none">
+      <div class="upload-area" id="personaDropArea"
+        onclick="document.getElementById('personaJsonFile').click()"
+        ondragover="event.preventDefault();this.classList.add('drag')"
+        ondragleave="this.classList.remove('drag')"
+        ondrop="handlePersonaJsonDrop(event)"
+        style="margin-bottom:12px;cursor:pointer">
+        <div style="font-size:24px;margin-bottom:6px">👤</div>
+        <div style="font-size:12px;color:var(--muted)">Persona TalkのエクスポートJSONをドロップ</div>
+        <div style="font-size:11px;color:var(--dim);margin-top:3px">persona_library.json</div>
+      </div>
+      <input type="file" id="personaJsonFile" accept=".json" style="display:none" onchange="handlePersonaJsonFile(event)" />
+      <div id="customPersonaGrid" class="persona-grid"></div>
+      <div id="customPersonaStatus" style="font-size:11px;color:var(--dim);margin-top:6px"></div>
+    </div>
 
     <div class="err-msg" id="errMsg"></div>
 
@@ -559,7 +587,7 @@ textarea { min-height: 80px; resize: vertical; line-height: 1.7; }
 // SYNTHETIC MEANING SPACE v1.2
 // ================================================================
 
-const PERSONAS = [
+let PERSONAS = [
   {
     id: 'zgirl', label: 'Z世代女子大生', emoji: '👩‍🎓', color: '#ff6bce',
     attr: '20歳前後 / SNS・動画高接触 / インフルエンサー影響大',
@@ -612,6 +640,9 @@ let selectedPersonas = [];
 let imageBase64 = null;
 let analysisResult = null;
 let isLoading = false;
+let personaMode = 'default'; // 'default' | 'custom'
+let customPersonas = [];
+let selectedCustomPersonas = [];
 
 const AI_LABELS = {
   'claude-sonnet': 'Claude Sonnet',
@@ -657,6 +688,103 @@ function togglePersona(id) {
   } else {
     selectedPersonas.push(id);
     document.getElementById('pc-' + id).classList.add('selected');
+  }
+}
+
+// ===== PERSONA MODE =====
+function setPersonaMode(mode) {
+  personaMode = mode;
+  document.getElementById('defaultPersonaArea').style.display = mode === 'default' ? 'block' : 'none';
+  document.getElementById('customPersonaArea').style.display = mode === 'custom' ? 'block' : 'none';
+  document.getElementById('modeDefaultBtn').style.borderColor = mode === 'default' ? 'var(--accent2)' : 'var(--border2)';
+  document.getElementById('modeDefaultBtn').style.color = mode === 'default' ? 'var(--accent2)' : 'var(--muted)';
+  document.getElementById('modeCustomBtn').style.borderColor = mode === 'custom' ? 'var(--accent2)' : 'var(--border2)';
+  document.getElementById('modeCustomBtn').style.color = mode === 'custom' ? 'var(--accent2)' : 'var(--muted)';
+}
+
+function handlePersonaJsonDrop(e) {
+  e.preventDefault();
+  document.getElementById('personaDropArea').classList.remove('drag');
+  var file = e.dataTransfer.files[0];
+  if (file) readPersonaJson(file);
+}
+
+function handlePersonaJsonFile(e) {
+  var file = e.target.files[0];
+  if (file) readPersonaJson(file);
+}
+
+function readPersonaJson(file) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = JSON.parse(e.target.result);
+      importPersonaJSON(data);
+    } catch(err) {
+      document.getElementById('customPersonaStatus').textContent = '⚠ JSONの読み込みに失敗しました：' + err.message;
+    }
+  };
+  reader.readAsText(file);
+}
+
+function importPersonaJSON(data) {
+  // Persona Talk format: array of { id, savedAt, persona: { name, age, gender, area, job, tagline, description, keywords, systemPrompt } }
+  var EMOJI_MAP = { '女性': '👩', '男性': '👨' };
+  var COLORS = ['#c0392b','#d4a017','#e8c84a','#e07b30','#9e6b3a','#a93226','#b8860b'];
+
+  customPersonas = data.map(function(item, idx) {
+    var p = item.persona || item;
+    var gender = p.gender || '';
+    var emoji = EMOJI_MAP[gender] || '🧑';
+    var label = p.name + '（' + (p.age || '') + '）';
+    var attr = [p.job, p.area].filter(Boolean).join(' / ');
+    var desc = p.tagline || p.description && p.description.slice(0, 60) + '...' || '';
+    var tags = Array.isArray(p.keywords) ? p.keywords : [];
+    var profile = p.systemPrompt || p.description || '';
+
+    return {
+      id: 'custom_' + (item.id || idx),
+      label: label,
+      emoji: emoji,
+      color: COLORS[idx % COLORS.length],
+      attr: attr,
+      desc: desc,
+      tags: tags,
+      profile: profile,
+      _source: p
+    };
+  });
+
+  selectedCustomPersonas = [];
+  renderCustomPersonaGrid();
+  document.getElementById('customPersonaStatus').textContent =
+    '✓ ' + customPersonas.length + '体のPersonaを読み込みました。選択なし＝全体使用';
+}
+
+function renderCustomPersonaGrid() {
+  var html = '';
+  customPersonas.forEach(function(p) {
+    html +=
+      '<div class="persona-card" id="cpc-' + p.id + '" onclick="toggleCustomPersona(\'' + p.id + '\')">' +
+        '<div class="persona-name">' + p.emoji + ' ' + p.label + '</div>' +
+        '<div class="persona-desc" style="font-size:11px;color:var(--muted);margin-bottom:4px">' + escHtml(p.attr) + '</div>' +
+        '<div class="persona-desc">' + escHtml(p.desc) + '</div>' +
+        '<div class="persona-tags">' +
+          p.tags.map(function(t) { return '<span class="persona-tag">' + escHtml(t) + '</span>'; }).join('') +
+        '</div>' +
+      '</div>';
+  });
+  document.getElementById('customPersonaGrid').innerHTML = html || '<div style="font-size:12px;color:var(--dim)">JSONをドロップしてください</div>';
+}
+
+function toggleCustomPersona(id) {
+  var idx = selectedCustomPersonas.indexOf(id);
+  if (idx >= 0) {
+    selectedCustomPersonas.splice(idx, 1);
+    document.getElementById('cpc-' + id).classList.remove('selected');
+  } else {
+    selectedCustomPersonas.push(id);
+    document.getElementById('cpc-' + id).classList.add('selected');
   }
 }
 
@@ -803,9 +931,21 @@ async function runAnalysis() {
   }
   document.getElementById('errMsg').classList.remove('on');
 
-  var personas = selectedPersonas.length > 0
-    ? PERSONAS.filter(function(p) { return selectedPersonas.indexOf(p.id) >= 0; })
-    : PERSONAS;
+  var personas;
+  if (personaMode === 'custom') {
+    if (!customPersonas.length) {
+      document.getElementById('errMsg').textContent = 'Persona TalkのJSONを読み込んでください。';
+      document.getElementById('errMsg').classList.add('on');
+      return;
+    }
+    personas = selectedCustomPersonas.length > 0
+      ? customPersonas.filter(function(p) { return selectedCustomPersonas.indexOf(p.id) >= 0; })
+      : customPersonas;
+  } else {
+    personas = selectedPersonas.length > 0
+      ? PERSONAS.filter(function(p) { return selectedPersonas.indexOf(p.id) >= 0; })
+      : PERSONAS;
+  }
 
   var metaProduct = document.getElementById('metaProduct').value.trim();
   var metaMedium = document.getElementById('metaMedium').value.trim();
@@ -1454,10 +1594,11 @@ function resetAll() {
   switchInputMode();
   imageBase64 = null;
   selectedPersonas = [];
+  selectedCustomPersonas = [];
   document.querySelectorAll('.persona-card').forEach(function(c) { c.classList.remove('selected'); });
   document.getElementById('uploadPreview').classList.remove('on');
 
-  ['understandingSection', 'personaSection', 'discussionSection', 'reportSection'].forEach(function(id) {
+  ['understandingSection', 'personaSection', 'discussionSection', 'memorySection', 'reportSection'].forEach(function(id) {
     document.getElementById(id).style.display = 'none';
   });
   document.getElementById('meaningMapInner').querySelectorAll('.meaning-dot').forEach(function(d) { d.remove(); });
