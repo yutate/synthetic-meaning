@@ -1625,21 +1625,40 @@ function resetAll() {
 }
 
 // ===== DOWNLOAD =====
-function maskApiKeys(html) {
-  // mask values stored in localStorage-populated inputs
-  return html
-    .replace(/(value=")[^"]{8,}(")/g, function(match, pre, post) {
-      // only mask inputs that look like API keys (long alphanum strings)
-      return pre + '****' + post;
-    })
-    .replace(/('x-api-key'\s*:\s*')[^']+(')/g, "$1****$2")
-    .replace(/("x-api-key"\s*:\s*")[^"]+(")/g, '$1****$2')
-    .replace(/(Authorization['"]?\s*:\s*['"]Bearer )[^\s'"]+/g, '$1****');
-}
-
 function downloadHTML() {
   if (!analysisResult) return;
-  var html = maskApiKeys(document.documentElement.outerHTML);
+
+  // DOM clone approach — prevents any key leakage
+  var clone = document.documentElement.cloneNode(true);
+
+  // 1. Blank all password inputs and any input that looks like an API key
+  clone.querySelectorAll('input[type=password], input[type=text]').forEach(function(el) {
+    var val = el.getAttribute('value') || el.value || '';
+    // clear if value looks like an API key (alphanum/dash, 20+ chars)
+    if (/^[A-Za-z0-9\-_\.]{20,}$/.test(val)) {
+      el.setAttribute('value', '');
+      el.value = '';
+    } else {
+      el.setAttribute('value', '');
+    }
+  });
+
+  // 2. Strip localStorage init script blocks that might echo keys
+  clone.querySelectorAll('script').forEach(function(s) {
+    s.textContent = s.textContent
+      .replace(/(localStorage\.getItem\([^)]+\))/g, 'null')
+      .replace(/('x-api-key'\s*:\s*')[^']+(')/g, "$1$2")
+      .replace(/("x-api-key"\s*:\s*")[^"]+(")/g, '$1$2')
+      .replace(/(Authorization['"]?\s*:\s*['"]Bearer )[^\s'"]+/g, '$1');
+  });
+
+  // 3. Remove key-status indicators
+  ['keySt','keySt2'].forEach(function(id) {
+    var el = clone.getElementById(id);
+    if (el) el.textContent = '';
+  });
+
+  var html = '<!DOCTYPE html>\n' + clone.outerHTML;
   var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
