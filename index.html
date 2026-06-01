@@ -728,17 +728,33 @@ function readPersonaJson(file) {
 }
 
 function importPersonaJSON(data) {
-  // Persona Talk format: array of { id, savedAt, persona: { name, age, gender, area, job, tagline, description, keywords, systemPrompt } }
   var EMOJI_MAP = { '女性': '👩', '男性': '👨' };
   var COLORS = ['#c0392b','#d4a017','#e8c84a','#e07b30','#9e6b3a','#a93226','#b8860b'];
 
   customPersonas = data.map(function(item, idx) {
+    // --- Persona Forge format: { label, emoji, desc, tags, profile } ---
+    if (item.label && item.profile) {
+      return {
+        id: 'custom_' + idx,
+        label: item.label,
+        emoji: item.emoji || '🧑',
+        color: COLORS[idx % COLORS.length],
+        attr: '',
+        desc: item.desc || '',
+        tags: Array.isArray(item.tags) ? item.tags : [],
+        profile: item.profile
+      };
+    }
+
+    // --- Persona Talk format: { id, savedAt, persona: { name, age, gender, ... } } ---
     var p = item.persona || item;
     var gender = p.gender || '';
     var emoji = EMOJI_MAP[gender] || '🧑';
-    var label = p.name + '（' + (p.age || '') + '）';
+    var namePart = p.name || '';
+    var agePart = p.age ? '（' + p.age + '）' : '';
+    var label = namePart + agePart || 'Persona ' + (idx + 1);
     var attr = [p.job, p.area].filter(Boolean).join(' / ');
-    var desc = p.tagline || p.description && p.description.slice(0, 60) + '...' || '';
+    var desc = p.tagline || (p.description ? p.description.slice(0, 60) + '…' : '');
     var tags = Array.isArray(p.keywords) ? p.keywords : [];
     var profile = p.systemPrompt || p.description || '';
 
@@ -750,8 +766,7 @@ function importPersonaJSON(data) {
       attr: attr,
       desc: desc,
       tags: tags,
-      profile: profile,
-      _source: p
+      profile: profile
     };
   });
 
